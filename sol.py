@@ -103,12 +103,18 @@ def greens0(x, S):
         g = (1/np.sinh(2*K))*np.sinh(x - K)*np.sinh(S + K)
     return g
 
-# TO DO GREENS FUNCTIONS:
 def greens1(x, S):
     if x < S:
-        g = np.exp(2*K)
+        g = np.exp(x + K)*np.sinh(S + K)
     elif x <= S:
-       
+        g = np.exp(S + K)*np.sinh(x + K)
+    return g
+
+def greens2(x, S):
+    if x < S:
+        g = np.exp(K - S)*np.sinh(x - K)
+    elif x <= S:
+        g = np.exp(K - x)*np.sinh(S + K)
     return g
     
     
