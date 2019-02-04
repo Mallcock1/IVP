@@ -116,19 +116,23 @@ def greens2(x, S):
     elif x <= S:
         g = np.exp(K - x)*np.sinh(S + K)
     return g
-    
-    
-    
-    
+
+def A1(x, t):
+    return -2*(1j*W0p*chi1p(psi0)*np.cos(W0p*t) - chi1p(dpsi0_dt)*np.sin(W0p*t)
+               + 1j*W0m*chi1m(psi0)np.cos(W0m*t)
+               - chi1m(dpsi0_dt)*np.sin(W0m*t))
+
+def A2(x, t):
+    return -2*(1j*W0p*chi2p(psi0)*np.cos(W0p*t) - chi2p(dpsi0_dt)*np.sin(W0p*t)
+               + 1j*W0m*chi2m(psi0)np.cos(W0m*t)
+               - chi2m(dpsi0_dt)*np.sin(W0m*t))
+
 # define the transverse velocity solution
 def vx_hat(x, t):
     if x < -K:
-        vx_hat_vals = -2*np.exp(K - x)*(1j*W0p*chi2p(psi0)*np.cos(W0p*t)
-                                        - chi2p(dpsi0_dt)*np.sin(W0p*t)
-                                        + 1j*W0m*chi2m(psi0)np.cos(W0m*t)
-                                        - chi2m(dpsi0_dt)*np.sin(W0m*t))
-                      + (1j / R2)*integrate(lambda S: (np.sinh(S - K) / np.sinh(2*K)) * f(S, W),
-                                             -K, K)
+        vx_hat_vals = np.exp(K - x)*A1(x, t)
+                      + (1j / R2)*integrate(lambda S: greens1(x, S)*(psi0(S, W)*np.cos*),
+                                            -K, K)
         
 
 def vx(x, z, t):
