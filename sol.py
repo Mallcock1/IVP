@@ -7,7 +7,7 @@ Created on Thu Jan 31 11:48:58 2019
 
 import numpy as np
 import scipy as sc
-import scipy.integrate.quad as integrate
+import scipy.integrate as ig
 import matplotlib.pyplot as plt
 
 """
@@ -24,6 +24,7 @@ R2 := rho_2/ rho_0
 K = 1.
 R1 = 0.5
 R2 = 0.8
+W = 1.
 
 #Define the alfven speeds.
 vA0 = 1.
@@ -41,13 +42,14 @@ W0p = np.sqrt((-b + np.sqrt(b**2 - 4*a*c)) / (2*a))
 W0m = np.sqrt((-b - np.sqrt(b**2 - 4*a*c)) / (2*a))
 
 # define initial conditions
-def psi0(x, W):
+def psi0(x):
+    return 1.
 
-def dpsi0_dt(x, W):
+def dpsi0_dt(x):
     return 0.
 
-def f(S, W):
-    W*psi0(x, W) + 1.j*dpsi0_dt(x, W)
+def f(x):
+    return W*psi0(x) + 1.j*dpsi0_dt(x)
 
 def eps0(W):
     return vA0**2 - W**2
@@ -65,18 +67,16 @@ def D(W):
     return e0*(e1 + e2)*np.cosh(2*K) + (e0**2 + e1*e2)*np.sinh(2*K)
 
 def I0p(f, W):
-    return integrate(lambda S: (np.sinh(S + K) / np.sinh(2*K)) * f(S, W),
-                     -K, K)
+    return ig.quad(lambda S: (np.sinh(S + K) / np.sinh(2*K)) * f(S), -K, K)[0]
 
 def I0m(f, W):
-    return integrate(lambda S: (np.sinh(S - K) / np.sinh(2*K)) * f(S, W),
-                     -K, K)
+    return ig.quad(lambda S: (np.sinh(S - K) / np.sinh(2*K)) * f(S), -K, K)[0]
 
 def I1(f, W):
-    return integrate(lambda S: np.exp(S + K) * f(S, W), -np.infty, -K)
+    return ig.quad(lambda S: np.exp(S + K) * f(S), -np.infty, -K)[0]
 
 def I2(f, W):
-    return integrate(lambda S: np.exp(K - S) * f(S, W), K, np.infty)
+    return ig.quad(lambda S: np.exp(K - S) * f(S), K, np.infty)[0]
 
 def T1(f, W):
     return (I0m(f, W) - I1(f, W))*(eps0(W)*np.cosh(2*K) + eps2(W)*np.sinh(2*K)) - eps0(W)*(I0p(f, W) + I2(f, W))
@@ -84,6 +84,7 @@ def T1(f, W):
 def T2(f, W):
     return eps0(W)*(I0m(f, W) - I1(f, W)) - (I0p(f, W) + I2(f, W))*(eps0(W)*np.cosh(2*K) + eps1(W)*np.sinh(2*K))
 
+# Need to make the D into D'
 def chi1p(f):
     return T1(f, W0p) / D(W0p)
     
@@ -118,27 +119,31 @@ def greens2(x, S):
     return g
 
 def A1(x, t):
-    return -2*(1j*W0p*chi1p(psi0)*np.cos(W0p*t) - chi1p(dpsi0_dt)*np.sin(W0p*t)
-               + 1j*W0m*chi1m(psi0)np.cos(W0m*t)
-               - chi1m(dpsi0_dt)*np.sin(W0m*t))
+    return (1j*W0p*chi1p(psi0)*np.cos(W0p*t) - chi1p(dpsi0_dt)*np.sin(W0p*t)
+            + 1j*W0m*chi1m(psi0)*np.cos(W0m*t) - chi1m(dpsi0_dt)*np.sin(W0m*t))
 
 def A2(x, t):
-    return -2*(1j*W0p*chi2p(psi0)*np.cos(W0p*t) - chi2p(dpsi0_dt)*np.sin(W0p*t)
-               + 1j*W0m*chi2m(psi0)np.cos(W0m*t)
-               - chi2m(dpsi0_dt)*np.sin(W0m*t))
+    return (1j*W0p*chi2p(psi0)*np.cos(W0p*t) - chi2p(dpsi0_dt)*np.sin(W0p*t)
+            + 1j*W0m*chi2m(psi0)*np.cos(W0m*t) - chi2m(dpsi0_dt)*np.sin(W0m*t))
 
 # define the transverse velocity solution
 def vx_hat(x, t):
     if x < -K:
-        vx_hat_vals = np.exp(K - x)*A1(x, t)
-                      + (1j / R2)*integrate(lambda S: greens1(x, S)*(psi0(S, W)*np.cos*),
-                                            -K, K)
+        vx_hat_vals = (-2 * np.exp(K + x)*A1(x, t)
+                      + (1j / R1)*ig.quad(lambda S: greens1(x, S)*(psi0(S)*np.cos(vA1*t) + dpsi0_dt(S)*np.sin(vA1*t)/vA1), -np.infty, K)[0])
+    if x >= -K and x < K:
+        vx_hat_vals = ((-2 / np.sinh(2*K)) * (A1(x, t)*np.sinh(K - x) + A2(x, t)*np.sinh(K + x))
+                      + 1j*ig.quad(lambda S: greens0(x, S)*(psi0(S)*np.cos(vA0*t) + dpsi0_dt(S)*np.sin(vA0*t)/vA0), -K, K)[0])
+    if x >= K:
+        vx_hat_vals = (-2 * np.exp(K - x)*A2(x, t)
+                      + (1j / R2)*ig.quad(lambda S: greens2(x, S)*(psi0(S)*np.cos(vA2*t) + dpsi0_dt(S)*np.sin(vA2*t)/vA2), K, np.infty)[0])
+    return vx_hat_vals
         
 
 def vx(x, z, t):
     return vx_hat(x, t)*np.exp(1j*z)
 
-sc.misc.derivative
+#plt.figure()
 
 
-plt.figure()
+print(vx(1, 1, 1))
