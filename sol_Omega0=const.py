@@ -8,6 +8,7 @@ Created on Fri Feb 08 13:28:56 2019
 import numpy as np
 import scipy as sc
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 """
 K := kx_0
@@ -21,8 +22,8 @@ R2 := rho_2/ rho_0
 """
 
 K = 1.
-R1 = 0.5
-R2 = 0.8
+R1 = 1.5
+R2 = 1.2
 W = 1.
 
 #Define the alfven speeds.
@@ -37,7 +38,7 @@ x_vals = np.linspace(-K - 1, K + 1, 1000)
 # define eigen phase speeds
 a = (1 + R1*R2)*np.tanh(2*K) + R1 + R2
 b = -(2*vA0**2 + R1*R2*(vA1**2 + vA2**2))*np.tanh(2*K) - (R1*(vA0**2 + vA1**2) + R2*(vA0**2 + vA2**2))
-c = vA0**4 + R1*R2*vA1**2*vA2**2*np.tanh(2*K) + vA0**2*(R1*vA1**2 + R2*vA2**2)
+c = (vA0**4 + R1*R2*vA1**2*vA2**2)*np.tanh(2*K) + vA0**2*(R1*vA1**2 + R2*vA2**2)
 
 W0p = sc.sqrt((-b + sc.sqrt(b**2 - 4*a*c)) / (2*a))
 W0m = sc.sqrt((-b - sc.sqrt(b**2 - 4*a*c)) / (2*a))
@@ -98,7 +99,24 @@ def vx_hat(x, t):
 def vx(x, z, t):
     return vx_hat(x, t)*np.exp(1j*z)
 
-#plt.figure()
+
+z = 0.
+x_vals = np.linspace(-K - 1, K + 1, 1000)
+t_vals = np.linspace(0, 50, 101)
+vx_vals = np.empty((len(x_vals), len(t_vals)))
+
+for i, t in enumerate(t_vals):
+    for j, x in enumerate(x_vals):
+        vx_vals[j, i] = 1j*vx(x, z, t)
 
 
-print(vx(0.5, 0, 1))
+fig1 = plt.figure()
+l, = plt.plot(x_vals, vx_vals[:,0], 'r-')
+
+def update(i):
+    l.set_data(x_vals, vx_vals[:, i])
+    return l,
+
+plt.ylim(-2.5, 2.5)
+line_ani = animation.FuncAnimation(fig1, update, len(t_vals),
+                                   interval=50, blit=True)
