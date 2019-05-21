@@ -23,16 +23,14 @@ R2 := rho_2/ rho_0
 """
 
 K = 1.
-R1 = 0.5
-R2 = 0.8
+R1 = 1.5
+R2 = 1.2
 W = 1.
 
 #Define the alfven speeds.
-vA0 = 0.9
+vA0 = 1.
 vA1 = 0.4
 vA2 = 0.5
-
-x_vals = np.linspace(-K - 1, K + 1, 1000)
 
 # define eigen phase speeds
 a = (1 + R1*R2)*np.tanh(2*K) + R1 + R2
@@ -56,10 +54,10 @@ def comp_quad(func, a, b, **kwargs):
 
 # define initial conditions
 def psi0(x):
-    return 1. #np.ones_like(x)
+    return 1.
 
 def dpsi0_dt(x):
-    return 0. #np.zeros_like(x)
+    return 0.
 
 def f(x):
     return W*psi0(x) + 1.j*dpsi0_dt(x)
@@ -125,24 +123,24 @@ def chi2m(f):
     return T2(f, W0m) / D_prime(W0m)
     
 def greens0(x, S):
-    if x > S:
+    if x < S:
         g = (1/np.sinh(2*K))*np.sinh(S - K)*np.sinh(x + K)
-    elif x <= S:
+    elif x >= S:
         g = (1/np.sinh(2*K))*np.sinh(x - K)*np.sinh(S + K)
     return g
 
 def greens1(x, S):
-    if x > S:
+    if x < S:
         g = np.exp(x + K)*np.sinh(S + K)
-    elif x <= S:
+    elif x >= S:
         g = np.exp(S + K)*np.sinh(x + K)
     return g
 
 def greens2(x, S):
-    if x > S:
-        g = np.exp(K - S)*np.sinh(x - K)
-    elif x <= S:
-        g = np.exp(K - x)*np.sinh(S + K)
+    if x < S:
+        g = -np.exp(K - S)*np.sinh(x - K)
+    elif x >= S:
+        g = -np.exp(K - x)*np.sinh(S - K)
     return g
 
 def A1(x, t):
@@ -157,7 +155,7 @@ def A2(x, t):
 def vx_hat(x, t):
     if x < -K:
         vx_hat_vals = (-2 * np.exp(K + x)*A1(x, t)
-                      + (1j / R1)*comp_quad(lambda S: greens1(x, S)*(psi0(S)*np.cos(vA1*t) + dpsi0_dt(S)*np.sin(vA1*t)/vA1), -np.infty, K)[0])
+                      + (1j / R1)*comp_quad(lambda S: greens1(x, S)*(psi0(S)*np.cos(vA1*t) + dpsi0_dt(S)*np.sin(vA1*t)/vA1), -np.infty, -K)[0])
     if x >= -K and x < K:
         vx_hat_vals = ((-2 / np.sinh(2*K)) * (A1(x, t)*np.sinh(K - x) + A2(x, t)*np.sinh(K + x))
                       + 1j*comp_quad(lambda S: greens0(x, S)*(psi0(S)*np.cos(vA0*t) + dpsi0_dt(S)*np.sin(vA0*t)/vA0), -K, K)[0])
@@ -170,16 +168,10 @@ def vx_hat(x, t):
 def vx(x, z, t):
     return vx_hat(x, t)*np.exp(1j*z)
 
-##plt.figure()
-#x = 0.1
-#z = 0.
-#t = 0.
-#
-#print(vx(x, z, t))
 
 z = 0.
-x_vals = np.linspace(-K - 1, K + 1, 10)
-t_vals = np.linspace(0, 5, 11)
+x_vals = np.linspace(-K - 1, K + 1, 100)
+t_vals = np.linspace(0, 20, 44)
 vx_vals = np.empty((len(x_vals), len(t_vals)))
 
 for i, t in enumerate(t_vals):
@@ -197,3 +189,5 @@ def update(i):
 plt.ylim(-2.5, 2.5)
 line_ani = animation.FuncAnimation(fig1, update, len(t_vals),
                                    interval=50, blit=True)
+
+#line_ani.save('sol_animation2.mp4', fps=20, extra_args=['-vcodec', 'libx264'])
