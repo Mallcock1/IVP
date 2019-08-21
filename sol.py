@@ -3,6 +3,8 @@
 Created on Thu Jan 31 11:48:58 2019
 
 @author: Matt
+
+Plotting the solution to the IVP for incompressible asymmetric slab.
 """
 
 import numpy as np
