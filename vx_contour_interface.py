@@ -38,7 +38,7 @@ def vx(x, z, t):
     
     vxp = (v0/(4*np.pi*z0)*(- tan1(z, x, t, z0, vp) - tan1(z, x, t, z0, -vp) 
                             + tan1(z, x, t, -z0, vp) + tan1(z, x, t, -z0, -vp)
-                            + tan1(z, x, t, z0, vp) + tan1(z, x, t, z0, -vp)
+                            + tan1(z, x, t, z0, vs) + tan1(z, x, t, z0, -vs)
                             - tan1(z, x, t, -z0, vs) - tan1(z, x, t, -z0, -vs)
                             + np.pi*(np.heaviside(z + z0 + vp*t, 0.5)
                             + np.heaviside(z + z0 - vp*t, 0.5)
@@ -60,7 +60,7 @@ Nz = 100
 
 x = np.linspace(xmin, xmax, Nx)
 z = np.linspace(zmin, zmax, Nz)
-X, Z = np.meshgrid(x, z)
+X, Z = np.meshgrid(z, x)
 
 tstart = 0
 tend = 5
@@ -69,13 +69,13 @@ Nt = 6
 t = np.linspace(tstart, tend, Nt)
 
 # initialise vx array
-vxvals = np.zeros((Nz, Nx, Nt))
+vxvals = np.zeros((Nx, Nz, Nt))
 
 # populate vx array
 for i in range(Nx):
     for j in range(Nz):
         for k in range(Nt):
-            vxvals[j, i, k] = vx(x[i], z[j], t[k])
+            vxvals[i, j, k] = vx(x[i], z[j], t[k])
 
 # Levels for contour plot
 levels = np.linspace(-v0*0.55, v0*0.55, 501)
@@ -85,7 +85,7 @@ label_font_size = 20
 # plot contours
 fig = plt.figure()
 ax = plt.gca()
-contour = plt.contourf(X, Z, vxvals[:,:,0], levels=levels, cmap='RdBu')
+contour = plt.contourf(Z, X, vxvals[:,:,0], levels=levels, cmap='RdBu')
 plt.xlabel(r'$x$', fontsize=label_font_size)
 plt.ylabel(r'$z$', fontsize=label_font_size)
 cbar = plt.colorbar()
@@ -108,12 +108,12 @@ plt.tight_layout()
 
 
 fig, axs = plt.subplots(3, 2, sharex=True, sharey=True, figsize=(10,10))
-contour = axs[0, 0].contourf(X, Z, vxvals[:,:,0], levels=levels, cmap='RdBu')
-axs[0, 1].contourf(X, Z, vxvals[:,:,1], levels=levels, cmap='RdBu')
-axs[1, 0].contourf(X, Z, vxvals[:,:,2], levels=levels, cmap='RdBu')
-axs[1, 1].contourf(X, Z, vxvals[:,:,3], levels=levels, cmap='RdBu')
-axs[2, 0].contourf(X, Z, vxvals[:,:,4], levels=levels, cmap='RdBu')
-axs[2, 1].contourf(X, Z, vxvals[:,:,5], levels=levels, cmap='RdBu')
+contour = axs[0, 0].contourf(Z, X, vxvals[:,:,0], levels=levels, cmap='RdBu')
+axs[0, 1].contourf(Z, X, vxvals[:,:,1], levels=levels, cmap='RdBu')
+axs[1, 0].contourf(Z, X, vxvals[:,:,2], levels=levels, cmap='RdBu')
+axs[1, 1].contourf(Z, X, vxvals[:,:,3], levels=levels, cmap='RdBu')
+axs[2, 0].contourf(Z, X, vxvals[:,:,4], levels=levels, cmap='RdBu')
+axs[2, 1].contourf(Z, X, vxvals[:,:,5], levels=levels, cmap='RdBu')
 
 cbar = fig.colorbar(contour, ax=axs)
 cbar.set_label('Velocity', rotation=270, fontsize=label_font_size, labelpad=10)
