@@ -25,9 +25,10 @@ R2 := rho_2/ rho_0
 """
 
 K = 1.
+x0 = 1.
 R1 = 1.5
 R2 = 1.2
-W = 1.
+w = 1.
 
 #Define the alfven speeds.
 vA0 = 1.
@@ -35,12 +36,19 @@ vA1 = 0.4
 vA2 = 0.5
 
 # define eigen phase speeds
-a = (1 + R1*R2)*np.tanh(2*K) + R1 + R2
-b = -(2*vA0**2 + R1*R2*(vA1**2 + vA2**2))*np.tanh(2*K) - (R1*(vA0**2 + vA1**2) + R2*(vA0**2 + vA2**2))
-c = (vA0**4 + R1*R2*vA1**2*vA2**2)*np.tanh(2*K) + vA0**2*(R1*vA1**2 + R2*vA2**2)
+def a(k):
+    return (1 + R1*R2)*np.tanh(2*k*x0) + R1 + R2
+def b(k):
+    return (-(2*vA0**2 + R1*R2*(vA1**2 + vA2**2))*np.tanh(2*k*x0)
+            - (R1*(vA0**2 + vA1**2) + R2*(vA0**2 + vA2**2)))
+def c(k):
+    return ((vA0**4 + R1*R2*vA1**2*vA2**2)*np.tanh(2*k*x0)
+            + vA0**2*(R1*vA1**2 + R2*vA2**2))
 
-W0p = sc.sqrt((-b + sc.sqrt(b**2 - 4*a*c)) / (2*a))
-W0m = sc.sqrt((-b - sc.sqrt(b**2 - 4*a*c)) / (2*a))
+def W0p(k):
+    return sc.sqrt((-b(k) + sc.sqrt(b(k)**2 - 4*a(k)*c(k))) / (2*a(k)))
+def W0m(k):
+    return sc.sqrt((-b(k) - sc.sqrt(b(k)**2 - 4*a(k)*c(k))) / (2*a(k)))
 
 
 # Define complex integration
@@ -62,21 +70,16 @@ def comp_quad(func, a, b, **kwargs):
 
 
 # Define initial conditions
-def psi0(x):
-#    if x >= -0.1 and x <= 0.1:
-#        psi0 = 1.
-#    else:
-#        psi0 = 0
-    psi0 = 1.
-    return psi0
+def psi0(x, k):
+    return k
 
 
-def dpsi0_dt(x):
+def dpsi0_dt(x, k):
     return 0.
 
 
-#def f(x, W):
-#    return W*psi0(x) + 1.j*dpsi0_dt(x)
+#def f(x, k):
+#    return w*psi0(x) + 1.j*dpsi0_dt(x)
 
 
 # Define functions that make up the solution
@@ -242,4 +245,4 @@ line_ani = animation.FuncAnimation(fig1, update, len(t_vals), interval=200,
                                    blit=True)
 
 # Save animation
-#line_ani.save('sol_animation2.mp4', fps=5, extra_args=['-vcodec', 'libx264'])
+#line_ani.save('sol_animation2.mp4', fps=20, extra_args=['-vcodec', 'libx264'])
