@@ -24,8 +24,9 @@ R1 := rho_1 / rho_0
 R2 := rho_2/ rho_0
 """
 
-K = 1.
+#K = 1.
 x0 = 1.
+z0 = 1.
 R1 = 1.5
 R2 = 1.2
 w = 1.
@@ -107,142 +108,201 @@ def eps2_prime(W):
     return -R2*2*W
 
 
-def D(W):
+def D(W, k):
     e0 = eps0(W)
     e1 = eps1(W)
     e2 = eps2(W)
-    return e0*(e1 + e2)*np.cosh(2*K) + (e0**2 + e1*e2)*np.sinh(2*K)
+    return e0*(e1 + e2)*np.cosh(2*k*x0) + (e0**2 + e1*e2)*np.sinh(2*k*x0)
 
 
-def D_prime(W):
+def D_prime(W, k):
     e0, e0p = eps0(W), eps0_prime(W)
     e1, e1p = eps1(W), eps1_prime(W)
     e2, e2p = eps2(W), eps2_prime(W)
-    return (e0p*(e1 + e2) + e0*(e1p + e2p))*np.cosh(2*K) + (2*e0p*e0 + e1p*e2 + e1*e2p)*np.sinh(2*K)
+    return ((e0p*(e1 + e2) + e0*(e1p + e2p))*np.cosh(2*k*x0)
+            + (2*e0p*e0 + e1p*e2 + e1*e2p)*np.sinh(2*k*x0))
 
 
-def I0p(f, W):
-    return comp_quad(lambda S: (np.sinh(S + K)/np.sinh(2*K)) * f(S), -K, K)[0]
+def I0p(f, k):
+    return comp_quad(lambda s: (np.sinh(k*(s + x0))/np.sinh(2*k*x0)) * f(s), -x0, x0)[0]
 
 
-def I0m(f, W):
-    return comp_quad(lambda S: (np.sinh(S - K)/np.sinh(2*K)) * f(S), -K, K)[0]
+def I0m(f, k):
+    return comp_quad(lambda s: (np.sinh(k*(s - x0))/np.sinh(2*k*x0)) * f(s), -x0, x0)[0]
 
 
-def I1(f, W):
-    return comp_quad(lambda S: np.exp(S + K) * f(S), -np.infty, -K)[0]
+def I1(f, k):
+    return comp_quad(lambda s: np.exp(k*(s + x0)) * f(s), -np.inf, -x0)[0]
 
 
-def I2(f, W):
-    return comp_quad(lambda S: np.exp(K - S) * f(S), K, np.infty)[0]
+def I2(f, k):
+    return comp_quad(lambda s: np.exp(k*(x0 - s)) * f(s), x0, np.inf)[0]
 
 
-def T1(f, W):
-    return (I0m(f, W) - I1(f, W))*(eps0(W)*np.cosh(2*K) + eps2(W)*np.sinh(2*K)) - eps0(W)*(I0p(f, W) + I2(f, W))
+def T1(f, W, k):
+    return ((I0m(f, k) - I1(f, k))*(eps0(W)*np.cosh(2*k*x0) + eps2(W)*np.sinh(2*k*x0))
+            - eps0(W)*(I0p(f, k) + I2(f, k)))
 
 
-def T2(f, W):
-    return eps0(W)*(I0m(f, W) - I1(f, W)) - (I0p(f, W) + I2(f, W))*(eps0(W)*np.cosh(2*K) + eps1(W)*np.sinh(2*K))
+def T2(f, W, k):
+    return (eps0(W)*(I0m(f, k) - I1(f, k))
+            - (I0p(f, k) + I2(f, k))*(eps0(W)*np.cosh(2*k*x0) + eps1(W)*np.sinh(2*k*x0)))
 
 
-def chi1p(f):
-    return T1(f, W0p) / D_prime(W0p)
+def chi1p(f, k):
+    return T1(f, W0p(k), k) / D_prime(W0p(k), k)
 
 
-def chi1m(f):
-    return T1(f, W0m) / D_prime(W0m)
+def chi1m(f, k):
+    return T1(f, W0m(k), k) / D_prime(W0m(k), k)
 
 
-def chi2p(f):
-    return T2(f, W0p) / D_prime(W0p)
+def chi2p(f, k):
+    return T2(f, W0p(k), k) / D_prime(W0p(k), k)
 
 
-def chi2m(f):
-    return T2(f, W0m) / D_prime(W0m)
+def chi2m(f, k):
+    return T2(f, W0m(k), k) / D_prime(W0m(k), k)
 
 
-def greens0(x, S):
-    if x < S:
-        g = (1/np.sinh(2*K))*np.sinh(S - K)*np.sinh(x + K)
-    elif x >= S:
-        g = (1/np.sinh(2*K))*np.sinh(x - K)*np.sinh(S + K)
+def greens0(x, s, k):
+    if x < s:
+        g = (1/np.sinh(2*k*x0))*np.sinh(k*(s - x0))*np.sinh(k*(x + x0))
+    elif x >= s:
+        g = (1/np.sinh(2*k*x0))*np.sinh(k*(x - x0))*np.sinh(k*(s + x0))
     return g
 
 
-def greens1(x, S):
-    if x < S:
-        g = np.exp(x + K)*np.sinh(S + K)
-    elif x >= S:
-        g = np.exp(S + K)*np.sinh(x + K)
+def greens1(x, s, k):
+    if x < s:
+        g = np.exp(k*(x + x0))*np.sinh(k*(s + x0))
+    elif x >= s:
+        g = np.exp(k*(s + x0))*np.sinh(k*(x + x0))
     return g
 
 
-def greens2(x, S):
-    if x < S:
-        g = -np.exp(K - S)*np.sinh(x - K)
-    elif x >= S:
-        g = -np.exp(K - x)*np.sinh(S - K)
+def greens2(x, s, k):
+    if x < s:
+        g = -np.exp(k*(x0 - s))*np.sinh(k*(x - x0))
+    elif x >= s:
+        g = -np.exp(k*(x0 - x))*np.sinh(k*(s - x0))
     return g
 
 
-def A1(x, t):
-    return (1j*W0p*chi1p(psi0)*np.cos(W0p*t) - chi1p(dpsi0_dt)*np.sin(W0p*t) +
-            1j*W0m*chi1m(psi0)*np.cos(W0m*t) - chi1m(dpsi0_dt)*np.sin(W0m*t))
+def A1(x, k, t):
+    def psi0_1arg(x):
+        return psi0(x, k)
+    def dpsi0_dt_1arg(x):
+        return dpsi0_dt(x, k)
+    
+    return (1j*W0p(k)*chi1p(psi0_1arg, k)*np.cos(W0p(k)*t)
+            - chi1p(dpsi0_dt_1arg, k)*np.sin(W0p(k)*t)
+            + 1j*W0m(k)*chi1m(psi0_1arg, k)*np.cos(W0m(k)*t)
+            - chi1m(dpsi0_dt_1arg, k)*np.sin(W0m(k)*t))
 
 
-def A2(x, t):
-    return (1j*W0p*chi2p(psi0)*np.cos(W0p*t) - chi2p(dpsi0_dt)*np.sin(W0p*t) +
-            1j*W0m*chi2m(psi0)*np.cos(W0m*t) - chi2m(dpsi0_dt)*np.sin(W0m*t))
+def A2(x, k, t):
+    def psi0_1arg(x):
+        return psi0(x, k)
+    def dpsi0_dt_1arg(x):
+        return dpsi0_dt(x, k)
+    
+    return (1j*W0p(k)*chi2p(psi0_1arg, k)*np.cos(W0p(k)*t)
+            - chi2p(dpsi0_dt_1arg, k)*np.sin(W0p(k)*t)
+            + 1j*W0m(k)*chi2m(psi0_1arg, k)*np.cos(W0m(k)*t)
+            - chi2m(dpsi0_dt_1arg, k)*np.sin(W0m(k)*t))
 
 
 # Define the transverse velocity solution
-def vx_hat(x, t):
-    if x < -K:
-        vx_hat_vals = (-2 * np.exp(K + x)*A1(x, t) +
-                       (1j / R1)*comp_quad(lambda S: greens1(x, S)*(psi0(S)*np.cos(vA1*t) + dpsi0_dt(S)*np.sin(vA1*t)/vA1), -np.infty, -K)[0])
-    if x >= -K and x < K:
-        vx_hat_vals = ((-2 / np.sinh(2*K)) * (A1(x, t)*np.sinh(K - x) + A2(x, t)*np.sinh(K + x)) +
-                       1j*comp_quad(lambda S: greens0(x, S)*(psi0(S)*np.cos(vA0*t) + dpsi0_dt(S)*np.sin(vA0*t)/vA0), -K, K)[0])
-    if x >= K:
-        vx_hat_vals = (-2 * np.exp(K - x)*A2(x, t) +
-                       (1j / R2)*comp_quad(lambda S: greens2(x, S)*(psi0(S)*np.cos(vA2*t) + dpsi0_dt(S)*np.sin(vA2*t)/vA2), K, np.infty)[0])
+def vx_hat(x, k, t):
+    if x < -x0:
+        vx_hat_vals = (-2 * np.exp(k*(x0 + x))*A1(x, k, t) +
+                       (1j / R1)*comp_quad(lambda s: greens1(x, s, k)*(psi0(s, k)*np.cos(k*vA1*t) + dpsi0_dt(s, k)*np.sin(k*vA1*t)/vA1), -np.inf, -x0)[0])
+    if x >= -x0 and x < x0:
+        vx_hat_vals = ((-2 / np.sinh(2*k*x0)) * (A1(x, k, t)*np.sinh(k*(x0 - x)) + A2(x, k, t)*np.sinh(k*(x0 + x))) +
+                       1j*comp_quad(lambda s: greens0(x, s, k)*(psi0(s, k)*np.cos(k*vA0*t) + dpsi0_dt(s, k)*np.sin(k*vA0*t)/vA0), -x0, x0)[0])
+    if x >= x0:
+        vx_hat_vals = (-2 * np.exp(k*(x0 - x))*A2(x, k, t) +
+                       (1j / R2)*comp_quad(lambda s: greens2(x, s, k)*(psi0(s, k)*np.cos(k*vA2*t) + dpsi0_dt(s, k)*np.sin(k*vA2*t)/vA2), x0, np.inf)[0])
     return vx_hat_vals
 
 
+def fourier_trans_inv(f, x, z, t):
+    """ Returns the inverse fourier transform of function f """
+    fti_vals = 1/(2*np.pi) * comp_quad(lambda k: f(x, k, t)*np.exp(1j*k*z),
+                                       -np.inf, np.inf)[0]
+    return fti_vals
+    
 def vx(x, z, t):
-    return vx_hat(x, t)*np.exp(1j*z)
-
-# Evaluate the solution at height z
-z = 0.
-
-# Coordinate values
-x_vals = np.linspace(-K - 1, K + 1, 30)
-t_vals = np.linspace(0, 25, 51)
-
-# Initialise solution array
-vx_vals = np.empty((len(x_vals), len(t_vals)))
-
-# Fill array
-for i, t in enumerate(t_vals):
-    for j, x in enumerate(x_vals):
-        vx_vals[j, i] = 1j*vx(x, z, t)
-
-# Initialise figure
-fig1 = plt.figure()
-l, = plt.plot(x_vals, vx_vals[:, 0], 'r-')
+    return fourier_trans_inv(vx_hat, x, z, t)
 
 
-# Fuction to update animation at each time step
-def update(i):
-    l.set_data(x_vals, vx_vals[:, i])
-    return l,
+v = vx(0.5, 0.5, 0.5)
 
-# Set axis limits
-plt.ylim(-2.5, 2.5)
+## Domain
+#xmin = -x0 - 1
+#xmax = -xmin
+#zmin = -3*z0
+#zmax = -zmin
+#Nx = 10
+#Nz = 10
+#
+#x = np.linspace(xmin, xmax, Nx)
+#z = np.linspace(zmin, zmax, Nz)
+#X, Z = np.meshgrid(z, x)
+#
+#tstart = 0
+#tend = 5
+#Nt = 6
+#
+#t = np.linspace(tstart, tend, Nt)
+#
+## initialise vx array
+#vxvals = np.zeros((Nx, Nz, Nt))
+#
+## populate vx array
+#for i in range(Nx):
+#    for j in range(Nz):
+#        for k in range(Nt):
+#            vxvals[i, j, k] = vx(x[i], z[j], t[k])
 
-# Animate!
-line_ani = animation.FuncAnimation(fig1, update, len(t_vals), interval=200,
-                                   blit=True)
 
-# Save animation
-#line_ani.save('sol_animation2.mp4', fps=20, extra_args=['-vcodec', 'libx264'])
+
+
+
+
+
+#
+#
+## Coordinate values
+#x_vals = np.linspace(-K - 1, K + 1, 30)
+#z_vals = 
+#t_vals = np.linspace(0, 25, 51)
+#
+## Initialise solution array
+#vx_vals = np.empty((len(x_vals), len(t_vals)))
+#
+## Fill array
+#for i, t in enumerate(t_vals):
+#    for j, x in enumerate(x_vals):
+#        vx_vals[j, i] = 1j*vx(x, z, t)
+#
+## Initialise figure
+#fig1 = plt.figure()
+#l, = plt.plot(x_vals, vx_vals[:, 0], 'r-')
+#
+#
+## Fuction to update animation at each time step
+#def update(i):
+#    l.set_data(x_vals, vx_vals[:, i])
+#    return l,
+#
+## Set axis limits
+#plt.ylim(-2.5, 2.5)
+#
+## Animate!
+#line_ani = animation.FuncAnimation(fig1, update, len(t_vals), interval=200,
+#                                   blit=True)
+#
+## Save animation
+##line_ani.save('sol_animation2.mp4', fps=20, extra_args=['-vcodec', 'libx264'])
